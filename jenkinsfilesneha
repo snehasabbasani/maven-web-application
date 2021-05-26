@@ -1,0 +1,64 @@
+pipeline
+{
+    agent any
+    tools{
+        maven 'maven3.8.1'
+    }
+    triggers{
+        // pollSCM('* * * * *')
+        //cron('* * * * *')
+    }
+    
+    stages{
+        
+        stage('checkoutcode'){
+            steps{
+                git branch: 'development', credentialsId: '6f71222c-e3be-4669-9500-21ca74c8edd8', url: 'https://github.com/snehasabbasani/maven-web-application.git'
+            }
+            
+            
+        }
+        
+        stage('build'){
+            steps{
+                sh "mvn clean package"
+            }
+        }
+        /*
+        stage('sonarqubereport'){
+            steps{
+                sh "mvn sonar:sonar"
+                }
+        }
+        
+        stage('uploadtonexus'){
+            steps{
+                sh "mvn deploy"
+            }
+        }
+        */
+        stage('deploytotomcat'){
+            steps{
+                sshagent(['4af06f86-e1e6-4591-b017-d8bf30178c77']) {
+                sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@35.154.141.227:/opt/apache-tomcat-9.0.45/webapps"    
+            }
+            }
+            
+        }    
+    
+    }
+    post{
+        success{
+            emailext body: '''build over 
+
+regrads,
+sneha''', subject: 'build over', to: 'sneha199526@gmail.com'
+        }
+        failure{
+            emailext body: '''build over failed
+
+regrads,
+sneha''', subject: 'build over failed', to: 'sneha199526@gmail.com'
+        }    
+    }
+}
